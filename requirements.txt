@@ -1,0 +1,10 @@
+scikit-learn
+matplotlib
+numpy
+torch
+optuna
+pandas
+pyyaml
+setuptools
+torchvision
+-e.
