@@ -1,0 +1,10 @@
+datasets:
+  wine:
+    data_id: 187
+    display_name: Wine
+    preprocessing: standard
+    identifier_columns: []
+    manual_categorical_columns: []
+    manual_numeric_columns: []
+    expected_features: 13
+    expected_classes: 3
