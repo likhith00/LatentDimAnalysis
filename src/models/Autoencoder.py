@@ -16,6 +16,8 @@ class Autoencoder(nn.Module):
                 encoder_layers.append(non_linear_function())
             in_dim = hidden_dim
 
+        encoder_layers.append(nn.Linear(in_dim, bottleneck_dim))
+
         decoder_layers = []
         in_dim = bottleneck_dim
         for hidden_dim in reversed(hidden_dims_list):
