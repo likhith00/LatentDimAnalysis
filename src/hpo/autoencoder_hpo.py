@@ -7,7 +7,9 @@ from src.training.train import train_autoencoder
 import optuna
 
 def objective(trial, X_train_tensor, X_val_tensor,n_epochs, bottleneck_dim):
-
+    seed = 42
+    torch.manual_seed(seed)
+    np.random.seed(seed)
     lr = trial.suggest_float("lr", 1e-5, 1e-2, log=True)
     depth = trial.suggest_int("depth", 1,3, step=1)
     activation_name = trial.suggest_categorical('activation', ['ReLU', 'LeakyReLU', 'GELU', 'Tanh'])
