@@ -52,7 +52,8 @@ def train_final_model(final_model, X_train_val_tensor, X_test_tensor, best_param
 
     final_model.eval()
     with torch.no_grad():
+        x_train_val_hat, z_train_val = final_model(X_train_val_tensor)
         x_test_hat, z_test = final_model(X_test_tensor)
         test_loss = loss_fn(x_test_hat, X_test_tensor)
 
-    return loss.item(), test_loss.item()
+    return loss.item(), test_loss.item(), z_train_val, z_test
