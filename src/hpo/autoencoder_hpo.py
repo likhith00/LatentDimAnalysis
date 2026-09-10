@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from src.models.Autoencoder import Autoencoder
-from src.hpo.hidden_dims import build_hidden_dims_static
+from src.models.AE import Autoencoder
+from src.hpo.hidden_dims import build_hidden_dims_geo
 from src.training.train import train_autoencoder
 import optuna
 
@@ -26,8 +26,8 @@ def objective(trial, X_train_tensor, X_val_tensor,n_epochs, bottleneck_dim):
     input_dim = X_train_tensor.shape[1]
 
 
-    #hidden_dims_list = build_hidden_dims_static(input_dim, bottleneck_dim, depth)
-    hidden_dims_list = build_hidden_dims_static(input_dim, depth=depth)
+    hidden_dims_list = build_hidden_dims_geo(input_dim, bottleneck_dim, depth)
+    #hidden_dims_list = build_hidden_dims_static(input_dim, depth=depth)
 
     model = Autoencoder(
         n_features=n_features,
@@ -47,7 +47,7 @@ def objective(trial, X_train_tensor, X_val_tensor,n_epochs, bottleneck_dim):
     )
     return loss
 
-def create_study(
+def create_study_ae(
     X_train_tensor,
     X_val_tensor,
     n_epochs,
