@@ -27,6 +27,7 @@ def objective_vae(
     depth = trial.suggest_int("depth", 1, 3, step=1)
     activation_name = trial.suggest_categorical("activation", ["ReLU", "LeakyReLU", "GELU", "Tanh"])
     beta = trial.suggest_float("beta", 0.1, 4.0, log=True)
+    n_epochs = trial.suggest_int("n_epochs", 100, 500, step=50)
 
     activations = {
         "ReLU": nn.ReLU,

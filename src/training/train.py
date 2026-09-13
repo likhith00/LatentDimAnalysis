@@ -2,12 +2,19 @@ import torch
 import optuna
 import torch.nn as nn
 
-
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
 
 def train_autoencoder(model, X_train, X_val, trial=None, n_epochs=200, lr=1e-3, patience=15):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.MSELoss()
     best_val_loss = float("inf")
+
+    model = model.to(device)
+    X_train = X_train.to(device)
+    X_val = X_val.to(device)
+
 
     for epoch in range(n_epochs):
         optimizer.zero_grad()
@@ -38,9 +45,14 @@ def train_autoencoder(model, X_train, X_val, trial=None, n_epochs=200, lr=1e-3, 
     return best_val_loss
 
 
-def train_final_model(final_model, X_train_val_tensor, X_test_tensor, best_params, epochs=200):
+def train_final_model(final_model, X_train_val_tensor, X_test_tensor, best_params, epochs=None):
     optimizer = torch.optim.Adam(final_model.parameters(), lr=best_params['lr'])
     loss_fn = nn.MSELoss()
+
+    final_model = final_model.to(device)
+    X_train_val_tensor = X_train_val_tensor.to(device)
+    X_test_tensor = X_test_tensor.to(device)
+    epochs = best_params["n_epochs"]
 
     final_model.train()
     for epoch in range(1,  epochs+ 1):

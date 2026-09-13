@@ -6,6 +6,12 @@ from src.hpo.hidden_dims import build_hidden_dims_geo
 from src.training.train import train_autoencoder
 import optuna
 
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+
+print("Using device:", device)
+
 def objective(trial, X_train_tensor, X_val_tensor,n_epochs, bottleneck_dim):
     seed = 42
     torch.manual_seed(seed)
@@ -19,6 +25,7 @@ def objective(trial, X_train_tensor, X_val_tensor,n_epochs, bottleneck_dim):
         'GELU': nn.GELU,
         'Tanh': nn.Tanh
     }
+    n_epochs = trial.suggest_int("n_epochs", 100, 500, step=50)
 
     non_linear_function = activations[activation_name]
 
@@ -35,7 +42,7 @@ def objective(trial, X_train_tensor, X_val_tensor,n_epochs, bottleneck_dim):
         non_linear=True,
         hidden_dims_list=hidden_dims_list,
         non_linear_function=non_linear_function
-    )
+    ).to(device)
     loss = train_autoencoder(
         model=model,
         X_train=X_train_tensor,

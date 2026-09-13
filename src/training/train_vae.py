@@ -2,6 +2,10 @@ import torch
 import optuna
 import torch.nn as nn
 
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+
 
 def vae_loss(x_hat, x, mu, logvar, beta=1.0):
 
@@ -17,6 +21,11 @@ def train_vae(model, X_train, X_val, trial=None, n_epochs=200, lr=1e-3, beta=1.0
 
     best_val_loss = float("inf")
     patience_counter = 0
+
+    model = model.to(device)
+    X_train = X_train.to(device)
+    X_val = X_val.to(device)
+
 
     for epoch in range(n_epochs):
         model.train()
@@ -60,9 +69,17 @@ def train_vae(model, X_train, X_val, trial=None, n_epochs=200, lr=1e-3, beta=1.0
     return best_val_loss
 
 
-def train_final_model_vae(final_model, X_train_val_tensor, X_test_tensor, best_params, epochs=200):
+def train_final_model_vae(final_model, X_train_val_tensor, X_test_tensor, best_params, epochs=None):
+
+    final_model = final_model.to(device)
+
+    X_train_val_tensor = X_train_val_tensor.to(device)
+    X_test_tensor = X_test_tensor.to(device)
+
     lr = best_params["lr"]
     beta = best_params.get("beta", 1.0)
+    if epochs is None:
+        epochs = best_params["n_epochs"]
 
     optimizer = torch.optim.Adam(
         final_model.parameters(),
