@@ -8,3 +8,30 @@ datasets:
     manual_numeric_columns: []
     expected_features: 13
     expected_classes: 3
+  mfeat_karhunen:
+    data_id: 16
+    display_name: MFeat Karhunen
+    preprocessing: standard
+    identifier_columns: []
+    manual_categorical_columns: []
+    manual_numeric_columns: []
+    expected_features: 64
+    expected_classes: 10
+  led_display:
+    data_id: 40496
+    display_name: LED Display Domain
+    preprocessing: standard
+    identifier_columns: []
+    manual_categorical_columns: []
+    manual_numeric_columns: []
+    expected_features: 7
+    expected_classes: 10
+  breast_cancer:
+    data_id: 1510
+    display_name: Breast Cancer Wisconsin Diagnostic
+    preprocessing: standard
+    identifier_columns: []
+    manual_categorical_columns: []
+    manual_numeric_columns: []
+    expected_features: 30
+    expected_classes: 2

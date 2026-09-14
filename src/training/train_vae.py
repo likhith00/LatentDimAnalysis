@@ -1,6 +1,7 @@
 import torch
 import optuna
 import torch.nn as nn
+import copy
 
 device = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
@@ -20,20 +21,22 @@ def train_vae(model, X_train, X_val, trial=None, n_epochs=200, lr=1e-3, beta=1.0
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     best_val_loss = float("inf")
+    best_state = None
     patience_counter = 0
 
     model = model.to(device)
     X_train = X_train.to(device)
     X_val = X_val.to(device)
 
-
+    warmup_epochs = 30
     for epoch in range(n_epochs):
         model.train()
         optimizer.zero_grad()
 
         x_hat, mu, logvar, z = model(X_train)
+        current_beta = beta * min(1.0, (epoch + 1) / warmup_epochs)
 
-        loss, recon_loss, kl_loss = vae_loss(x_hat, X_train, mu, logvar, beta=beta)
+        loss, recon_loss, kl_loss = vae_loss(x_hat, X_train, mu, logvar, beta=current_beta)
 
         loss.backward()
         optimizer.step()
@@ -41,18 +44,19 @@ def train_vae(model, X_train, X_val, trial=None, n_epochs=200, lr=1e-3, beta=1.0
         model.eval()
 
         with torch.no_grad():
-            x_val_hat, mu_val, logvar_val, z_val = model(X_val)
-
+            mu_val, logvar_val = model.encode(X_val)
+            x_val_hat = model.decode(mu_val)
             val_loss, val_recon_loss, val_kl_loss = vae_loss(
                 x_val_hat,
                 X_val,
                 mu_val,
                 logvar_val,
-                beta=beta
+                beta=current_beta
             )
 
         if val_loss.item() < best_val_loss:
             best_val_loss = val_loss.item()
+            best_state = copy.deepcopy(model.state_dict())
             patience_counter = 0
         else:
             patience_counter += 1
@@ -66,11 +70,12 @@ def train_vae(model, X_train, X_val, trial=None, n_epochs=200, lr=1e-3, beta=1.0
             if trial.should_prune():
                 raise optuna.TrialPruned()
 
+    if best_state is not None:
+        model.load_state_dict(best_state)
     return best_val_loss
 
 
 def train_final_model_vae(final_model, X_train_val_tensor, X_test_tensor, best_params, epochs=None):
-
     final_model = final_model.to(device)
 
     X_train_val_tensor = X_train_val_tensor.to(device)
@@ -88,18 +93,22 @@ def train_final_model_vae(final_model, X_train_val_tensor, X_test_tensor, best_p
 
     final_model.train()
 
+    warmup_epochs = 30
     for epoch in range(1, epochs + 1):
 
         optimizer.zero_grad()
 
-        x_hat, mu, logvar, z = final_model(X_train_val_tensor)
+        x_hat, mu, logvar, z = final_model(
+            X_train_val_tensor
+        )
 
+        current_beta = beta * min(1.0, epoch / warmup_epochs)
         loss, recon_loss, kl_loss = vae_loss(
             x_hat,
             X_train_val_tensor,
             mu,
             logvar,
-            beta=beta
+            beta=current_beta
         )
 
         loss.backward()
@@ -109,10 +118,17 @@ def train_final_model_vae(final_model, X_train_val_tensor, X_test_tensor, best_p
 
     with torch.no_grad():
 
-        x_train_val_hat, mu_train_val, logvar_train_val, z_train_val = final_model(X_train_val_tensor)
 
-        # Test latent representation
-        x_test_hat, mu_test, logvar_test, z_test = final_model(X_test_tensor)
+        mu_train_val, logvar_train_val = final_model.encode(
+            X_train_val_tensor
+        )
+
+        mu_test, logvar_test = final_model.encode(
+            X_test_tensor
+        )
+
+        x_train_val_hat = final_model.decode(mu_train_val)
+        x_test_hat = final_model.decode(mu_test)
 
         test_loss, test_recon_loss, test_kl_loss = vae_loss(
             x_test_hat,
@@ -125,8 +141,8 @@ def train_final_model_vae(final_model, X_train_val_tensor, X_test_tensor, best_p
     return (
         loss.item(),
         test_loss.item(),
-        recon_loss.item(),
-        kl_loss.item(),
-        z_train_val,
-        z_test
+        test_recon_loss.item(),
+        test_kl_loss.item(),
+        mu_train_val,
+        mu_test
     )

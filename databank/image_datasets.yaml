@@ -1,0 +1,246 @@
+defaults:
+  library: torchvision
+  samples_to_load: 10000
+  download: true
+
+datasets:
+
+  mnist:
+    display_name: MNIST
+    torchvision_class: MNIST
+
+    input_shape: [1, 28, 28]
+    size: [28, 28]
+    expected_classes: 10
+
+    split_type: train_test
+
+    train_args:
+      train: true
+
+    test_args:
+      train: false
+
+
+  fmnist:
+    display_name: Fashion-MNIST
+    torchvision_class: FashionMNIST
+
+    input_shape: [1, 28, 28]
+    size: [28, 28]
+    expected_classes: 10
+
+    split_type: train_test
+
+    train_args:
+      train: true
+
+    test_args:
+      train: false
+
+
+  cifar100:
+    display_name: CIFAR-100
+    torchvision_class: CIFAR100
+
+    input_shape: [3, 32, 32]
+    size: [32, 32]
+    expected_classes: 100
+
+    split_type: train_test
+
+    train_args:
+      train: true
+
+    test_args:
+      train: false
+
+
+  emnist_balanced:
+    display_name: EMNIST Balanced
+    torchvision_class: EMNIST
+
+    input_shape: [1, 28, 28]
+    size: [28, 28]
+    expected_classes: 47
+
+    split_type: train_test
+
+    common_args:
+      split: balanced
+
+    train_args:
+      train: true
+
+    test_args:
+      train: false
+
+
+  caltech101:
+    display_name: Caltech-101
+    torchvision_class: Caltech101
+
+    input_shape: null
+    size: [64, 64]
+    expected_classes: 101
+
+    split_type: full
+
+
+  eurosat:
+    display_name: EuroSAT
+    torchvision_class: EuroSAT
+
+    input_shape: [3, 64, 64]
+    size: [64, 64]
+    expected_classes: 10
+
+    split_type: full
+
+
+  flowers102:
+    display_name: Flowers102
+    torchvision_class: Flowers102
+
+    input_shape: null
+    size: [8,8]
+    expected_classes: 102
+
+    split_type: train_val_test
+
+    train_args:
+      split: train
+
+    val_args:
+      split: val
+
+    test_args:
+      split: test
+
+
+  dtd:
+    display_name: DTD
+    torchvision_class: DTD
+
+    input_shape: null
+    size: [64, 64]
+    expected_classes: 47
+
+    split_type: train_val_test
+
+    train_args:
+      split: train
+
+    val_args:
+      split: val
+
+    test_args:
+      split: test
+
+
+  pcam:
+    display_name: PCAM
+    torchvision_class: PCAM
+
+    input_shape: [3, 96, 96]
+    size: [96, 96]
+    expected_classes: 2
+
+    split_type: train_val_test
+
+    train_args:
+      split: train
+
+    val_args:
+      split: val
+
+    test_args:
+      split: test
+
+
+  gtsrb:
+    display_name: GTSRB
+    torchvision_class: GTSRB
+
+    input_shape: null
+    size: [64, 64]
+    expected_classes: 43
+
+    split_type: train_test
+
+    train_args:
+      split: train
+
+    test_args:
+      split: test
+
+
+  oxford_iiit_pet:
+    display_name: Oxford-IIIT Pet
+    torchvision_class: OxfordIIITPet
+
+    input_shape: null
+    size: [64, 64]
+    expected_classes: 37
+
+    split_type: train_test
+
+    train_args:
+      split: trainval
+
+    test_args:
+      split: test
+
+
+  stl10:
+    display_name: STL-10
+    torchvision_class: STL10
+
+    input_shape: [3, 96, 96]
+    size: [96, 96]
+    expected_classes: 10
+
+    split_type: train_test
+
+    train_args:
+      split: train
+
+    test_args:
+      split: test
+
+
+  stanford_cars:
+    display_name: Stanford Cars
+    torchvision_class: StanfordCars
+
+    input_shape: null
+    size: [64, 64]
+    expected_classes: 196
+
+    split_type: train_test
+
+    train_args:
+      split: train
+
+    test_args:
+      split: test
+
+
+  fgvc_aircraft:
+    display_name: FGVC Aircraft
+    torchvision_class: FGVCAircraft
+
+    input_shape: null
+    size: [64, 64]
+    expected_classes: 100
+
+    split_type: train_val_test
+
+    train_args:
+      split: train
+
+    val_args:
+      split: val
+
+    test_args:
+      split: test
