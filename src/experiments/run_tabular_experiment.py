@@ -21,6 +21,7 @@ from src.plotting.plot_results import (
     plot_knn_results,
     plot_reconstruction_results
 )
+from src.utils import aggregate_seed_results
 
 
 activation_functions = {
@@ -35,7 +36,7 @@ def get_dataset_records():
 
 
 
-def execute_tabular(dataset_name: str, bottleneck_range: list, plot_path="./results"):
+def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, seeds=[42], plot_path="./results"):
 
     specs = get_dataset_records() 
     if dataset_name not in list(specs):
@@ -102,7 +103,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, plot_path="./resu
         X_train_tensor,
         X_val_tensor,
         n_epochs=100,
-        bottleneck_dim=2,
+        bottleneck_dim=hpo_latent,
         n_trials=20,
         study_name="autoencoder_HPO_mfeat_analysis"
     )
@@ -114,7 +115,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, plot_path="./resu
         X_train_tensor,
         X_val_tensor,
         n_epochs=100,
-        bottleneck_dim=32,
+        bottleneck_dim=hpo_latent,
         n_trials=20,
         study_name="vae_hpo_study"
     )
@@ -136,10 +137,9 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, plot_path="./resu
 
     print("step 8/11 Running PCA")
 
-    pca_results = run_sweep(
+    pca_raw_results = run_sweep(
         model_type="pca",
         dimensions=bottleneck_range,
-
         X_train_val=X_train_val,
         y_train_val=y_train_val,
         X_test=X_test,
@@ -149,9 +149,10 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, plot_path="./resu
     )
 
     print("step 9/11 Running AE")
-    ae_results = run_sweep(
+    ae_raw_results = run_sweep(
         model_type="ae",
         dimensions=bottleneck_range,
+        seeds=seeds,
         input_dim=input_dim,
         X_train_val_tensor=X_train_val_tensor,
         X_test_tensor=X_test_tensor,
@@ -164,9 +165,10 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, plot_path="./resu
     )
 
     print("step 10/11 Running VAE")
-    vae_results = run_sweep(
+    vae_raw_results = run_sweep(
         model_type="vae",
         dimensions=bottleneck_range,
+        seeds=seeds,
         input_dim=input_dim,
         X_train_val_tensor=X_train_val_tensor,
         X_test_tensor=X_test_tensor,
@@ -178,7 +180,12 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, plot_path="./resu
         epochs=400
     )
 
-    print("step 11/11 saving results")
+    print("step 11/11 Aggregating seed results...")
+    pca_results = aggregate_seed_results(pca_raw_results)
+    ae_results = aggregate_seed_results(ae_raw_results)
+    vae_results = aggregate_seed_results(vae_raw_results)
+
+    print("step 12/12 saving results")
     plot_reconstruction_results(
         pca_results=pca_results,
         ae_results=ae_results,
