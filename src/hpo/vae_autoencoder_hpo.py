@@ -6,6 +6,7 @@ import optuna
 from src.models.VAE import VariationalAutoencoder
 from src.hpo.hidden_dims import build_hidden_dims_geo
 from src.training.train_vae import train_vae
+from src.utils import set_seed
 
 
 def objective_vae(
@@ -17,8 +18,7 @@ def objective_vae(
 ):
     seed = 42
 
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+    set_seed(seed)
 
     # =========================
     # Hyperparameters

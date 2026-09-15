@@ -13,7 +13,7 @@ from torch.utils.data import ConcatDataset
 
 from src.metrics.knn import find_best_neighbors
 from src.plotting.plot_results import plot_knn_results, plot_reconstruction_results
-
+from src.utils import aggregate_seed_results
 
 activation_functions = {
     "ReLU": nn.ReLU,
@@ -26,7 +26,7 @@ activation_functions = {
 def get_dataset_records():
     return merged_specs(Path("../databank/image_datasets.yaml"))
 
-def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = None, hpo_latent:int=32, plot_path="./results" ):
+def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = None, hpo_latent:int=32, seeds=[42], plot_path="./results" ):
     specs = get_dataset_records()
 
     if dataset_name not in list(specs):
@@ -38,7 +38,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
     print(f"Expected classes: {spec['expected_classes']}")
     print(f"Samples: {spec['samples_to_load']}")
 
-    print("step 1/9 : Fetching the dataset..")
+    print("step 1/10 : Fetching the dataset..")
 
     dataset_mapping = get_dataset_mapping(dataset_name=dataset_name)
     trf = None
@@ -61,7 +61,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
         test_dataset
     ])
 
-    print("step 2/9 : preprocessing and splitting the dataset..")
+    print("step 2/10 : preprocessing and splitting the dataset..")
     prep_data = preprocess_torchvision_dataset(
         dataset=full_dataset,
         max_samples=spec["samples_to_load"],
@@ -82,7 +82,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
 
     print("split shape: X_train, X_val, X_test, X_train_val ",X_train.shape, X_val.shape, X_test.shape, X_train_val.shape)
 
-    print(f"step 3/9 Tuning Autoencoder for the latent dimension: {hpo_latent}")
+    print(f"step 3/10 Tuning Autoencoder for the latent dimension: {hpo_latent}")
     study_ae = create_study_ae(
         X_train_tensor,
         X_val_tensor,
@@ -92,7 +92,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
         study_name="autoencoder_HPO_mfeat_analysis"
     )
     print(f"Best parameters of Autencoder - {study_ae.best_params}")
-    print(f"step 4/9 Tuning Variational Autoencoder for the latent dimension: {hpo_latent}")
+    print(f"step 4/10 Tuning Variational Autoencoder for the latent dimension: {hpo_latent}")
         
     study_vae = create_study_vae(
         X_train_tensor,
@@ -105,7 +105,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
     print(f"Best parameters of Variational Autencoder - {study_vae.best_params}")
 
 
-    print("step 5/9 Finding best neighbors")
+    print("step 5/10 Finding best neighbors")
     best_neighbors, best_val_score = find_best_neighbors(
         X_train=X_train,
         y_train=y_train,
@@ -118,9 +118,9 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
 
     input_dim = X_train_val_tensor.shape[1]
 
-    print("step 6/9 Running PCA")
+    print("step 6/10 Running PCA")
 
-    pca_results = run_sweep(
+    pca_raw_results = run_sweep(
             model_type="pca",
             dimensions=bottleneck_range,
     
@@ -132,10 +132,12 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
             n_neighbors=best_neighbors
         )
 
-    print("step 7/9 Running AE")
-    ae_results = run_sweep(
+    print("step 7/10 Running AE")
+
+    ae_raw_results = run_sweep(
         model_type="ae",
         dimensions=bottleneck_range,
+        seeds=seeds,
         input_dim=input_dim,
         X_train_val_tensor=X_train_val_tensor,
         X_test_tensor=X_test_tensor,
@@ -147,10 +149,12 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
         epochs=400
     )
 
-    print("step 8/9 Running VAE")
-    vae_results = run_sweep(
+    print("step 8/10 Running VAE")
+
+    vae_raw_results = run_sweep(
         model_type="vae",
         dimensions=bottleneck_range,
+        seeds=seeds,
         input_dim=input_dim,
         X_train_val_tensor=X_train_val_tensor,
         X_test_tensor=X_test_tensor,
@@ -162,7 +166,22 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
         epochs=400
     )
 
-    print("step 9/9 saving results")
+    print("Step 9/10 Aggregating seed results...")
+
+    pca_results = aggregate_seed_results(
+        pca_raw_results
+    )
+
+    ae_results = aggregate_seed_results(
+        ae_raw_results
+    )
+
+    vae_results = aggregate_seed_results(
+        vae_raw_results
+    )
+
+    print("step 10/10 Plotting and saving results")
+
     plot_reconstruction_results(
         pca_results=pca_results,
         ae_results=ae_results,
@@ -173,7 +192,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
         pca_results=pca_results,
         ae_results=ae_results,
         vae_results=vae_results,
-        output_dir = plot_path
+        output_dir=plot_path
     )
 
     

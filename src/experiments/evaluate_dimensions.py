@@ -7,6 +7,7 @@ from src.training.train_vae import train_final_model_vae
 from src.training.train import train_final_model
 from src.metrics.knn import compute_knn_score
 from src.hpo.hidden_dims import build_hidden_dims_geo
+from src.utils import set_seed
 
 
 
@@ -63,8 +64,7 @@ def evaluate_ae_dimension(
     seed=42
 ):
 
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+    set_seed(seed)
 
     hidden_dims = build_hidden_dims_geo(
         input_dim=input_dim,
@@ -132,8 +132,7 @@ def evaluate_vae_dimension(
             f"Latent dimension {k} must be smaller than input dimension {input_dim}"
         )
 
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+    set_seed(seed)
 
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
@@ -187,42 +186,41 @@ def evaluate_vae_dimension(
         "test_reconstruction": test_reconstruction,
         "test_kl": test_kl
     }
-      
+
 def run_sweep(
     model_type,
     dimensions,
+    seeds=(42,),
     **kwargs
 ):
-
     results = []
 
     for k in dimensions:
+        for seed in seeds:
+            if model_type == "pca":
+                result = evaluate_pca_dimension(
+                    k=k,
+                    **kwargs
+                )
+                result["seed"] = seed
 
-        if model_type == "pca":
-            result = evaluate_pca_dimension(
-                k=k,
-                **kwargs
-            )
+            elif model_type == "ae":
+                result = evaluate_ae_dimension(
+                    k=k,
+                    seed=seed,
+                    **kwargs
+                )
 
-        elif model_type == "ae":
-            result = evaluate_ae_dimension(
-                k=k,
-                **kwargs
-            )
-
-        elif model_type == "vae":
-            result = evaluate_vae_dimension(
-                k=k,
-                **kwargs
-            )
-
-        else:
-            raise ValueError(
-                f"Unknown model type: {model_type}"
-            )
-
-        results.append(result)
-
-        print(result)
-
+            elif model_type == "vae":
+                result = evaluate_vae_dimension(
+                    k=k,
+                    seed=seed,
+                    **kwargs
+                )
+            else:
+                raise ValueError(
+                    f"Unknown model type: {model_type}"
+                )
+            results.append(result)
+            print(result)
     return results
