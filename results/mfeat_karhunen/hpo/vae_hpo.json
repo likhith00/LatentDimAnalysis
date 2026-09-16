@@ -1,0 +1,8 @@
+{
+    "lr": 0.007755389089131425,
+    "depth": 1,
+    "activation": "LeakyReLU",
+    "beta": 0.00040039415669145635,
+    "n_epochs": 350,
+    "hpo_latent": 31
+}

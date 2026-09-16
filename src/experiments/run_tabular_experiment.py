@@ -37,14 +37,16 @@ def get_dataset_records():
 
 
 
-def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, seeds=[42], plot_path="./results"):
-
+def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, seeds=[42], results_path = "../results"):
     specs = get_dataset_records() 
     if dataset_name not in list(specs):
         print(f"{dataset_name} doesn't exist...")
         raise
     spec = specs[dataset_name]
-    results_dir = "results"
+    main_results_dir = Path(results_path)
+    hpo_results_dir =  main_results_dir / dataset_name /"hpo"
+    model_results_dir = main_results_dir / dataset_name/ "model_results"
+    plots_dir = main_results_dir / dataset_name / "plots"
 
     # Step 1 - Fetch detaset from openml
     print("step 1/12 : Fetching the dataset..")
@@ -102,7 +104,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
 
     print("step 5/12 Tuning Autoencoder")
 
-    best_ae_params = load_hpo_params( dataset_name=dataset_name, method_name="AE", results_dir=results_dir)
+    best_ae_params = load_hpo_params( dataset_name=dataset_name, method_name="ae", results_dir=hpo_results_dir)
     if best_ae_params is None:
         print("No existing AE HPO found. ""Running Optuna...")
 
@@ -122,7 +124,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
             dataset_name=dataset_name,
             method_name="AE",
             best_params=best_ae_params,
-            results_dir=results_dir
+            results_dir=hpo_results_dir
         )
     else:
         print("Existing AE HPO found. Skipping HPO.")
@@ -131,7 +133,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
 
     print("step 6/12 Tuning Variational Autoencoder")
     
-    best_vae_params = load_hpo_params(dataset_name=dataset_name, method_name="VAE", results_dir=results_dir)
+    best_vae_params = load_hpo_params(dataset_name=dataset_name, method_name="vae", results_dir=hpo_results_dir)
     if best_vae_params is None:
         print("No existing VAE HPO found. " "Running Optuna...")
 
@@ -152,7 +154,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
             dataset_name=dataset_name,
             method_name="VAE",
             best_params=best_vae_params,
-            results_dir=results_dir
+            results_dir=hpo_results_dir
         )
     else:
         print("Existing VAE HPO found. Skipping HPO.")
@@ -229,39 +231,39 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
         dataset_name=dataset_name,
         method_name="PCA",
         results=pca_results,
-        results_dir="results"
+        results_dir=model_results_dir
     )
 
     save_or_update_results(
         dataset_name=dataset_name,
         method_name="AE",
         results=ae_results,
-        results_dir="results"
+        results_dir=model_results_dir
     )
 
     save_or_update_results(
         dataset_name=dataset_name,
         method_name="VAE",
         results=vae_results,
-        results_dir="results"
+        results_dir=model_results_dir
     )
 
     all_pca_results, all_ae_results, all_vae_results = load_results(
         dataset_name=dataset_name,
-        results_dir="results"
+        results_dir=model_results_dir
     )
     
     plot_reconstruction_results(
         pca_results=all_pca_results,
         ae_results=all_ae_results,
         vae_results=all_vae_results,
-        output_dir=plot_path
+        output_dir=plots_dir
     )
     plot_knn_results(
         pca_results=all_pca_results,
         ae_results=all_ae_results,
         vae_results=all_vae_results,
-        output_dir = plot_path
+        output_dir = plots_dir
     )
 
 

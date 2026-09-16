@@ -27,7 +27,7 @@ activation_functions = {
 def get_dataset_records():
     return merged_specs(Path("../databank/image_datasets.yaml"))
 
-def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = None, hpo_latent:int=32, seeds=[42], plot_path="./results" ):
+def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = None, hpo_latent:int=32, seeds=[42], results_path = "../results" ):
     specs = get_dataset_records()
 
     if dataset_name not in list(specs):
@@ -43,7 +43,10 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
 
     dataset_mapping = get_dataset_mapping(dataset_name=dataset_name)
     trf = None
-    results_dir = "results"
+    main_results_dir = Path(results_path)
+    hpo_results_dir =  main_results_dir / dataset_name /"hpo"
+    model_results_dir = main_results_dir / dataset_name/ "model_results"
+    plots_dir = main_results_dir / dataset_name / "plots"
 
 
     if transform:
@@ -86,7 +89,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
     print("split shape: X_train, X_val, X_test, X_train_val ",X_train.shape, X_val.shape, X_test.shape, X_train_val.shape)
 
     print(f"step 3/10 Tuning Autoencoder for the latent dimension: {hpo_latent}")
-    best_ae_params = load_hpo_params( dataset_name=dataset_name, method_name="AE", results_dir=results_dir)
+    best_ae_params = load_hpo_params( dataset_name=dataset_name, method_name="ae", results_dir=hpo_results_dir)
 
     if best_ae_params is None:
         print("No existing AE HPO found. ""Running Optuna...")
@@ -107,7 +110,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
             dataset_name=dataset_name,
             method_name="AE",
             best_params=best_ae_params,
-            results_dir=results_dir
+            results_dir=hpo_results_dir
         )
     else:
         print("Existing AE HPO found. Skipping HPO.")
@@ -116,7 +119,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
 
     print("step 4/10 Tuning Variational Autoencoder")
     
-    best_vae_params = load_hpo_params(dataset_name=dataset_name, method_name="VAE", results_dir=results_dir)
+    best_vae_params = load_hpo_params(dataset_name=dataset_name, method_name="vae", results_dir=hpo_results_dir)
     if best_vae_params is None:
         print("No existing VAE HPO found. " "Running Optuna...")
 
@@ -137,7 +140,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
             dataset_name=dataset_name,
             method_name="VAE",
             best_params=best_vae_params,
-            results_dir=results_dir
+            results_dir=hpo_results_dir
         )
     else:
         print("Existing VAE HPO found. Skipping HPO.")
@@ -224,39 +227,39 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
         dataset_name=dataset_name,
         method_name="PCA",
         results=pca_results,
-        results_dir="results"
+        results_dir=model_results_dir
     )
 
     save_or_update_results(
         dataset_name=dataset_name,
         method_name="AE",
         results=ae_results,
-        results_dir="results"
+        results_dir=model_results_dir
     )
 
     save_or_update_results(
         dataset_name=dataset_name,
         method_name="VAE",
         results=vae_results,
-        results_dir="results"
+        results_dir=model_results_dir
     )    
 
     all_pca_results, all_ae_results, all_vae_results = load_results(
         dataset_name=dataset_name,
-        results_dir="results"
+        results_dir=model_results_dir
     )
     
     plot_reconstruction_results(
         pca_results=all_pca_results,
         ae_results=all_ae_results,
         vae_results=all_vae_results,
-        output_dir=plot_path
+        output_dir=plots_dir
     )
     plot_knn_results(
         pca_results=all_pca_results,
         ae_results=all_ae_results,
         vae_results=all_vae_results,
-        output_dir = plot_path
+        output_dir = plots_dir
     )
     
     
