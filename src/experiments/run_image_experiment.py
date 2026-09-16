@@ -14,6 +14,7 @@ from torch.utils.data import ConcatDataset
 from src.metrics.knn import find_best_neighbors
 from src.plotting.plot_results import plot_knn_results, plot_reconstruction_results
 from src.utils import aggregate_seed_results
+from src.io.save_results import save_or_update_results
 
 activation_functions = {
     "ReLU": nn.ReLU,
@@ -89,7 +90,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
         n_epochs=100,
         bottleneck_dim=hpo_latent,
         n_trials=20,
-        study_name="autoencoder_HPO_mfeat_analysis"
+        study_name=f"autoencoder_HPO_{dataset_name}_analysis"
     )
     print(f"Best parameters of Autencoder - {study_ae.best_params}")
     print(f"step 4/10 Tuning Variational Autoencoder for the latent dimension: {hpo_latent}")
@@ -100,7 +101,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
         n_epochs=100,
         bottleneck_dim=hpo_latent,
         n_trials=20,
-        study_name="vae_hpo_study"
+        study_name=f"vae_HPO_{dataset_name}_analysis"
     )
     print(f"Best parameters of Variational Autencoder - {study_vae.best_params}")
 
@@ -181,6 +182,26 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
     )
 
     print("step 10/10 Plotting and saving results")
+    save_or_update_results(
+        dataset_name=dataset_name,
+        method_name="PCA",
+        results=pca_results,
+        results_dir="results"
+    )
+
+    save_or_update_results(
+        dataset_name=dataset_name,
+        method_name="AE",
+        results=ae_results,
+        results_dir="results"
+    )
+
+    save_or_update_results(
+        dataset_name=dataset_name,
+        method_name="VAE",
+        results=vae_results,
+        results_dir="results"
+    )    
 
     plot_reconstruction_results(
         pca_results=pca_results,

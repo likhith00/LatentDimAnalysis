@@ -22,6 +22,7 @@ from src.plotting.plot_results import (
     plot_reconstruction_results
 )
 from src.utils import aggregate_seed_results
+from src.io.save_results import save_or_update_results
 
 
 activation_functions = {
@@ -45,14 +46,14 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
     spec = specs[dataset_name]
 
     # Step 1 - Fetch detaset from openml
-    print("step 1/11 : Fetching the dataset..")
+    print("step 1/12 : Fetching the dataset..")
     dataset = fetch_openml(data_id=spec["data_id"], as_frame=True, parser="auto")
 
     X, y = dataset.data.copy(), dataset.target.copy()
     y = pd.Series(y, index=X.index)
     print("original Feature shape", X.shape, y.shape, type(X), type(y))
 
-    print("step 2/11 : Cleaning data")
+    print("step 2/12 : Cleaning data")
 
     X, y, duplicate_count = remove_duplicate_rows(X, y)
     print(f"No.of duplicate rows removed: {duplicate_count}")
@@ -74,10 +75,10 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
     )
     print(f"No. of categorical columns: {len(numeric)} and No.of numerical columns: {len(categorical)}")
 
-    print("step 3/11 : Splitting data")
+    print("step 3/12 : Splitting data")
     X_train, X_val, X_test, y_train, y_val, y_test, encoder = split_data(X, y)
 
-    print("Step 4/11 : Preprocess data ")
+    print("Step 4/12 : Preprocess data ")
     X_train, X_val, X_test = preprocess_features(
         X_train, X_val, X_test, numeric, categorical
     )
@@ -98,7 +99,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
 
     print("split shape: X_train, X_val, X_test, X_train_val ",X_train.shape, X_val.shape, X_test.shape, X_train_val.shape)
 
-    print("step 5/11 Tuning Autoencoder")
+    print("step 5/12 Tuning Autoencoder")
     study_ae = create_study_ae(
         X_train_tensor,
         X_val_tensor,
@@ -109,7 +110,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
     )
     print(f"Best parameters of Autencoder - {study_ae.best_params}")
 
-    print("step 6/11 Tuning Variational Autoencoder")
+    print("step 6/12 Tuning Variational Autoencoder")
     
     study_vae = create_study_vae(
         X_train_tensor,
@@ -122,7 +123,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
     print(f"Best parameters of Variational Autencoder - {study_vae.best_params}")
 
 
-    print("step 7/11 Finding best neighbors")
+    print("step 7/12 Finding best neighbors")
     best_neighbors, best_val_score = find_best_neighbors(
         X_train=X_train,
         y_train=y_train,
@@ -135,7 +136,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
 
     input_dim = X_train_val_tensor.shape[1]
 
-    print("step 8/11 Running PCA")
+    print("step 8/12 Running PCA")
 
     pca_raw_results = run_sweep(
         model_type="pca",
@@ -148,7 +149,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
         n_neighbors=best_neighbors
     )
 
-    print("step 9/11 Running AE")
+    print("step 9/12 Running AE")
     ae_raw_results = run_sweep(
         model_type="ae",
         dimensions=bottleneck_range,
@@ -163,8 +164,9 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
         activation_functions=activation_functions,
         epochs=400
     )
+    
 
-    print("step 10/11 Running VAE")
+    print("step 10/12 Running VAE")
     vae_raw_results = run_sweep(
         model_type="vae",
         dimensions=bottleneck_range,
@@ -180,12 +182,32 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
         epochs=400
     )
 
-    print("step 11/11 Aggregating seed results...")
+    print("step 11/12 Aggregating seed results...")
     pca_results = aggregate_seed_results(pca_raw_results)
     ae_results = aggregate_seed_results(ae_raw_results)
     vae_results = aggregate_seed_results(vae_raw_results)
 
-    print("step 12/12 saving results")
+    print("step 12/12 saving results and  plots")
+    save_or_update_results(
+        dataset_name=dataset_name,
+        method_name="PCA",
+        results=pca_results,
+        results_dir="results"
+    )
+
+    save_or_update_results(
+        dataset_name=dataset_name,
+        method_name="AE",
+        results=ae_results,
+        results_dir="results"
+    )
+
+    save_or_update_results(
+        dataset_name=dataset_name,
+        method_name="VAE",
+        results=vae_results,
+        results_dir="results"
+    )
     plot_reconstruction_results(
         pca_results=pca_results,
         ae_results=ae_results,
