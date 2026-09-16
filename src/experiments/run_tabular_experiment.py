@@ -22,7 +22,7 @@ from src.plotting.plot_results import (
     plot_reconstruction_results
 )
 from src.utils import aggregate_seed_results
-from src.io.save_results import save_or_update_results, load_results
+from src.io.save_results import load_hpo_params, save_hpo_params, save_or_update_results, load_results
 
 
 activation_functions = {
@@ -44,6 +44,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
         print(f"{dataset_name} doesn't exist...")
         raise
     spec = specs[dataset_name]
+    results_dir = "results"
 
     # Step 1 - Fetch detaset from openml
     print("step 1/12 : Fetching the dataset..")
@@ -100,27 +101,63 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
     print("split shape: X_train, X_val, X_test, X_train_val ",X_train.shape, X_val.shape, X_test.shape, X_train_val.shape)
 
     print("step 5/12 Tuning Autoencoder")
-    study_ae = create_study_ae(
-        X_train_tensor,
-        X_val_tensor,
-        n_epochs=100,
-        bottleneck_dim=hpo_latent,
-        n_trials=20,
-        study_name="autoencoder_HPO_mfeat_analysis"
-    )
-    print(f"Best parameters of Autencoder - {study_ae.best_params}")
+
+    best_ae_params = load_hpo_params( dataset_name=dataset_name, method_name="AE", results_dir=results_dir)
+    if best_ae_params is None:
+        print("No existing AE HPO found. ""Running Optuna...")
+
+        study_ae = create_study_ae(
+            X_train_tensor,
+            X_val_tensor,
+            n_epochs=100,
+            bottleneck_dim=hpo_latent,
+            n_trials=20,
+            study_name=f"{dataset_name}_ae_hpo"
+        )
+
+        best_ae_params = study_ae.best_params.copy()
+
+        best_ae_params["hpo_latent"] = hpo_latent
+        save_hpo_params(
+            dataset_name=dataset_name,
+            method_name="AE",
+            best_params=best_ae_params,
+            results_dir=results_dir
+        )
+    else:
+        print("Existing AE HPO found. Skipping HPO.")
+
+    print("Best parameters of Autoencoder:", best_ae_params)
 
     print("step 6/12 Tuning Variational Autoencoder")
     
-    study_vae = create_study_vae(
-        X_train_tensor,
-        X_val_tensor,
-        n_epochs=100,
-        bottleneck_dim=hpo_latent,
-        n_trials=20,
-        study_name="vae_hpo_study"
-    )
-    print(f"Best parameters of Variational Autencoder - {study_vae.best_params}")
+    best_vae_params = load_hpo_params(dataset_name=dataset_name, method_name="VAE", results_dir=results_dir)
+    if best_vae_params is None:
+        print("No existing VAE HPO found. " "Running Optuna...")
+
+        study_vae = create_study_vae(
+            X_train_tensor,
+            X_val_tensor,
+            n_epochs=100,
+            bottleneck_dim=hpo_latent,
+            n_trials=20,
+            study_name=f"{dataset_name}_vae_hpo"
+        )
+
+        best_vae_params = study_vae.best_params.copy()
+
+        best_vae_params["hpo_latent"] = hpo_latent
+
+        save_hpo_params(
+            dataset_name=dataset_name,
+            method_name="VAE",
+            best_params=best_vae_params,
+            results_dir=results_dir
+        )
+    else:
+        print("Existing VAE HPO found. Skipping HPO.")
+    print("Best parameters of Variational Autoencoder:",best_vae_params)
+
 
 
     print("step 7/12 Finding best neighbors")
@@ -159,7 +196,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
         X_test_tensor=X_test_tensor,
         y_train_val=y_train_val,
         y_test=y_test,
-        best_params=study_ae.best_params,
+        best_params=best_ae_params,
         n_neighbors=best_neighbors,
         activation_functions=activation_functions,
         epochs=400
@@ -176,7 +213,7 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
         X_test_tensor=X_test_tensor,
         y_train_val=y_train_val,
         y_test=y_test,
-        best_params=study_vae.best_params,
+        best_params=best_vae_params,
         n_neighbors=best_neighbors,
         activation_functions=activation_functions,
         epochs=400

@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+import json
 
 def save_or_update_results(dataset_name, method_name, results, results_dir="results"):
     dataset_dir = Path(results_dir) / dataset_name
@@ -44,3 +45,29 @@ def load_results(dataset_name, results_dir = "results"):
     vae_results = pd.read_csv(vae_path).to_dict("records")
 
     return pca_results, ae_results, vae_results
+
+def load_hpo_params(dataset_name, method_name, results_dir="results"):
+    dataset_dir = Path(results_dir) / dataset_name
+    hpo_file = dataset_dir / f"{method_name.lower()}_hpo.json"
+
+    if not hpo_file.exists():
+        return None
+
+    with open(hpo_file, "r") as f:
+        params = json.load(f)
+
+    print(f"Loaded HPO parameters from: {hpo_file}")
+
+    return params
+
+def save_hpo_params(dataset_name, method_name, best_params, results_dir="results"):
+    
+    dataset_dir = Path(results_dir) / dataset_name
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+
+    hpo_file = dataset_dir / f"{method_name.lower()}_hpo.json"
+
+    with open(hpo_file, "w") as f:
+        json.dump(best_params, f, indent=4)
+
+    print(f"Saved HPO parameters to: {hpo_file}")
