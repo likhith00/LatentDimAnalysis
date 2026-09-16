@@ -22,7 +22,7 @@ from src.plotting.plot_results import (
     plot_reconstruction_results
 )
 from src.utils import aggregate_seed_results
-from src.io.save_results import save_or_update_results
+from src.io.save_results import save_or_update_results, load_results
 
 
 activation_functions = {
@@ -208,16 +208,22 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
         results=vae_results,
         results_dir="results"
     )
+
+    all_pca_results, all_ae_results, all_vae_results = load_results(
+        dataset_name=dataset_name,
+        results_dir="results"
+    )
+    
     plot_reconstruction_results(
-        pca_results=pca_results,
-        ae_results=ae_results,
-        vae_results=vae_results,
+        pca_results=all_pca_results,
+        ae_results=all_ae_results,
+        vae_results=all_vae_results,
         output_dir=plot_path
     )
     plot_knn_results(
-        pca_results=pca_results,
-        ae_results=ae_results,
-        vae_results=vae_results,
+        pca_results=all_pca_results,
+        ae_results=all_ae_results,
+        vae_results=all_vae_results,
         output_dir = plot_path
     )
 
