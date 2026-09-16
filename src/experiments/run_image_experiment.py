@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 
 from torch import nn
@@ -22,12 +23,13 @@ activation_functions = {
     "GELU": nn.GELU,
     "Tanh": nn.Tanh,
 }
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def get_dataset_records():
-    return merged_specs(Path("../databank/image_datasets.yaml"))
+    return merged_specs(PROJECT_ROOT / "databank" / "image_datasets.yaml")
 
-def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = None, hpo_latent:int=32, seeds=[42], results_path = "../results" ):
+def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = None, hpo_latent:int=32, seeds=[42], results_path = "results" ):
     specs = get_dataset_records()
 
     if dataset_name not in list(specs):
@@ -44,9 +46,12 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
     dataset_mapping = get_dataset_mapping(dataset_name=dataset_name)
     trf = None
     main_results_dir = Path(results_path)
+    if not main_results_dir.is_absolute():
+        main_results_dir = PROJECT_ROOT / main_results_dir
     hpo_results_dir =  main_results_dir / dataset_name /"hpo"
     model_results_dir = main_results_dir / dataset_name/ "model_results"
     plots_dir = main_results_dir / dataset_name / "plots"
+    
 
 
     if transform:
@@ -57,7 +62,7 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
     train_dataset, val_dataset, test_dataset = load_dataset_tvt(
         name=dataset_name,
         dataset_mapping=dataset_mapping,
-        root="../root",
+        root=PROJECT_ROOT / 'root',
         transform=trf
     )
 
@@ -262,4 +267,62 @@ def execute_image(dataset_name: str, bottleneck_range: list, transform:bool = No
         output_dir = plots_dir
     )
     
-    
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Run image latent-dimension experiments."
+    )
+
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        required=True,
+        help="Dataset name as defined in imagedatasets.yaml"
+    )
+
+    parser.add_argument(
+        "--transform",
+        action="store_true",
+        help="Apply image transform/resizing"
+    )
+
+    parser.add_argument(
+        "--bottleneck-range",
+        type=int,
+        nargs="+",
+        required=True,
+        help="Latent dimensions to evaluate, e.g. --bottleneck-range 1 2 4 8 16"
+    )
+
+    parser.add_argument(
+        "--hpo-latent",
+        type=int,
+        default=32,
+        help="Reference latent dimension used for HPO"
+    )
+
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=[42],
+        help="Random seeds, e.g. --seeds 42 43 44"
+    )
+
+    parser.add_argument(
+        "--results-path",
+        type=str,
+        default="results",
+        help="Root directory for saved results"
+    )
+
+    args = parser.parse_args()
+
+    execute_image(
+        dataset_name=args.dataset,
+        bottleneck_range=args.bottleneck_range,
+        transform=args.transform,
+        hpo_latent=args.hpo_latent,
+        seeds=args.seeds,
+        results_path=args.results_path
+    )

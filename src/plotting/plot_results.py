@@ -59,7 +59,6 @@ def plot_reconstruction_results(
         bbox_inches="tight"
     )
 
-    plt.show()
     plt.close()
 
     print(f"Plot saved to: {save_path}")
@@ -124,7 +123,6 @@ def plot_knn_results(
         bbox_inches="tight"
     )
 
-    plt.show()
     plt.close()
 
     print(f"Plot saved to: {save_path}")

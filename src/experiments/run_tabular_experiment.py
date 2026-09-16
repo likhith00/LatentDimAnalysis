@@ -32,18 +32,22 @@ activation_functions = {
     "Tanh": nn.Tanh,
 }
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 def get_dataset_records():
-    return merged_specs(Path("../databank/tabular_datasets.yaml"))
+    return merged_specs(PROJECT_ROOT / "databank" / "tabular_datasets.yaml")
 
 
 
-def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, seeds=[42], results_path = "../results"):
+def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, seeds=[42], results_path = "results"):
     specs = get_dataset_records() 
     if dataset_name not in list(specs):
         print(f"{dataset_name} doesn't exist...")
         raise
     spec = specs[dataset_name]
     main_results_dir = Path(results_path)
+    if not main_results_dir.is_absolute():
+        main_results_dir = PROJECT_ROOT / main_results_dir
     hpo_results_dir =  main_results_dir / dataset_name /"hpo"
     model_results_dir = main_results_dir / dataset_name/ "model_results"
     plots_dir = main_results_dir / dataset_name / "plots"
@@ -267,8 +271,55 @@ def execute_tabular(dataset_name: str, bottleneck_range: list, hpo_latent=32, se
     )
 
 
+import argparse
 
-    
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run tabular latent-dimension experiments.")
+
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        required=True,
+        help="Dataset name as defined in tabular_datasets.yaml"
+    )
+    parser.add_argument(
+        "--bottleneck-range",
+        type=int,
+        nargs="+",
+        required=True,
+        help="Latent dimensions to evaluate, e.g. --bottleneck-range 1 2 4 8 16"
+    )
+    parser.add_argument(
+        "--hpo-latent",
+        type=int,
+        default=32,
+        help="Reference latent dimension used for HPO"
+    )
+
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=[42],
+        help="Random seeds, e.g. --seeds 42 43 44"
+    )
+
+    parser.add_argument(
+        "--results-path",
+        type=str,
+        default="results",
+        help="Root directory for saved results"
+    )
+
+    args = parser.parse_args()
+
+    execute_tabular(
+        dataset_name=args.dataset,
+        bottleneck_range=args.bottleneck_range,
+        hpo_latent=args.hpo_latent,
+        seeds=args.seeds,
+        results_path=args.results_path
+    )
 
 
    
